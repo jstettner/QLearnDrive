@@ -79,7 +79,11 @@ def main():
         else: # random actions during game load
             action_n = [random.choice(actions) for ob in observation_n]
 
-        observation_n, reward_n, done_n, info = env.step(action_n) # execute a and retrieve s' and r
+        s_prime, reward_n, done_n, info = env.step(action_n) # execute a and retrieve s' and r
+
+        rm.ins(observation_n, action_n, reward_n, s_prime) # add to replay memory
+
+        observation_n = s_prime
         env.render()
 
 if __name__ == '__main__':

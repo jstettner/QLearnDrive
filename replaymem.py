@@ -2,21 +2,30 @@
 # -*- coding: utf-8 -*-
 import random
 
+Transition = namedtuple('Transition',
+                        ('state', 'action', 'reward', 'next_state'))
+
 class ReplayMemory(object):
-    def __init__(self, sample_size):
+    def __init__(self, capacity):
         super(ReplayMemory, self).__init__()
+        self.capacity = capacity
         self.rm = []
-        self.sample_size = sample_size
+        self.position = 0
 
-    def ins(s, a, r, s_prime):
-        self.rm.append([s, a, r, s_prime])
+    def ins(self, *args):
+        if len(self.rm) < self.capacity:
+            self.rm.append(None)
+        self.rm[self.position] = Transition(*args)
+        self.position = (self.position + 1) % self.capacity
 
-    def getMem():
+    def getMem(self):
         return self.rm
 
-    def sample():
-        if(len(rm) == 0 or sample_size > len(self.rm)):
-            return -1
+    def sample(self, batch_size):
+        if(len(rm) == 0 or batch_size > len(self.rm)):
+            return None
         else:
-            ran = random.randint(0, len(self.rm)-sample_size)
-            return self.rm[ran : ran + sample_size]
+            return random.sample(self.rm, batch_size)
+
+    def __len__(self):
+        return len(self.rm)

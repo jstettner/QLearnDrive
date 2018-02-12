@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import random
+from collections import namedtuple
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'reward', 'next_state'))

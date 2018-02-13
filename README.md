@@ -1,5 +1,5 @@
 [![PRs Welcome](http://forthebadge.com/images/badges/oooo-kill-em.svg)](https://github.com/jstettner/QLearnDrive/issues)
-# CNN developed to play Neon Racer 2
+# Your favorite self-driving convolutional neural net
 
 TODO:
 * Separate generating memory and learning from it

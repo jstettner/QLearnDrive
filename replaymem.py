@@ -4,7 +4,7 @@ import random
 from collections import namedtuple
 
 Transition = namedtuple('Transition',
-                        ('state', 'action', 'reward', 'next_state'))
+                        ('state', 'action', 'next_state', 'reward'))
 
 class ReplayMemory(object):
     def __init__(self, capacity):
@@ -23,7 +23,7 @@ class ReplayMemory(object):
         return self.rm
 
     def sample(self, batch_size):
-        if(len(rm) == 0 or batch_size > len(self.rm)):
+        if(len(self.rm) == 0 or batch_size > len(self.rm)):
             return None
         else:
             return random.sample(self.rm, batch_size)

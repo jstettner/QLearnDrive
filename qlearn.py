@@ -65,14 +65,32 @@ def select_action(state):
     else:
         return [random.choice(ACTIONS)]
 
-last_sync = 0
-
 def optimize_model():
     if len(memory) < BATCH_SIZE:
         return
     transitions = memory.sample(BATCH_SIZE)
 
     batch = Transition(*zip(*transitions))
+
+    x_train = []
+    y_train = []
+
+    for i in range(len(batch[0])):
+        ss = batch[0][i]
+        aa = batch[1][i]
+        if(batch[2][i] != None):
+            ss_p = np.expand_dims(np.expand_dims(batch[2][i][0]['vision'], axis=3), axis=0)
+        rr = batch[3][i]
+
+        tt = rr
+        if(batch[2][i] != None):
+            tt = rr + GAMMA*np.amax(Q.predict(ss_p))
+
+        x_train.append(ss)
+        y_train.append(tt)
+
+    Q.fit(x=x_train, y=y_train, batch_size=32, epochs=5, verbose=1)
+
 
 def main():
     env = gym.make(GAME)
@@ -84,12 +102,18 @@ def main():
         if(observation_n[0] != None):
             observation = np.expand_dims(np.expand_dims(observation_n[0]['vision'], axis=3), axis=0)
             action_n = select_action(observation)
-            memory.ins(observation, action_n, next_state, reward_n)
+
+            next_state, reward_n, done_n, info = env.step(action_n)
+
+            if(done_n[0]):
+                memory.ins(observation, action_n, [None], reward_n)
+            else:
+                memory.ins(observation, action_n, next_state, reward_n)
+
             optimize_model()
         else:
             action_n = [random.choice(ACTIONS)]
-
-        next_state, reward_n, done_n, info = env.step(action_n)
+            next_state, reward_n, done_n, info = env.step(action_n)
 
         observation_n = next_state
         env.render()

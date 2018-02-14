@@ -20,7 +20,7 @@ FORWARD = [('KeyEvent', 'ArrowLeft', False),('KeyEvent', 'ArrowRight', False),('
 
 ACTIONS = [LEFT, RIGHT, FORWARD]
 
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 GAMMA = 0.999
 EPS_START = 0.9
 EPS_END = 0.05
@@ -44,9 +44,7 @@ Q.add(Conv3D(64, kernel_size=(4,4,1), strides=2,
         input_shape=(50, 67, 1, 64)))
 Q.add(Flatten())
 Q.add(Dense(1000, activation='relu', input_shape=(49152,)))
-# Q.add(Dropout(0.2, input_shape=(1000,)))
 Q.add(Dense(512, activation='relu', input_shape=(1000,)))
-# Q.add(Dropout(0.2, input_shape=(512,)))
 Q.add(Dense(128, activation='relu', input_shape=(512,)))
 Q.add(Dense(3, activation='linear', input_shape=(128,)))
 Q.compile(loss='categorical_crossentropy',
@@ -61,13 +59,16 @@ def select_action(state):
         math.exp(-1. * steps_done / EPS_DECAY)
     steps_done += 1
     if sample > eps_threshold:
-        return [ACTIONS[np.argmax(Q.predict(state))]]
+        return np.argmax(Q.predict(state))
     else:
-        return [random.choice(ACTIONS)]
+        return random.randint(0,2)
 
 def optimize_model():
+    print('Starting optimization')
+
     if len(memory) < BATCH_SIZE:
         return
+
     transitions = memory.sample(BATCH_SIZE)
 
     batch = Transition(*zip(*transitions))
@@ -87,33 +88,50 @@ def optimize_model():
             tt = rr + GAMMA*np.amax(Q.predict(ss_p))
 
         x_train.append(ss)
-        y_train.append(tt)
+        y_data = np.zeros(3)
+        y_data[aa] = tt
+        y_train.append(y_data)
 
+    x_train = np.array(x_train)
+    y_train = np.array(y_train)
+    print(x_train)
+    print(y_train)
     Q.fit(x=x_train, y=y_train, batch_size=32, epochs=5, verbose=1)
 
-
+episodes = 5
 def main():
     env = gym.make(GAME)
-    env.configure(remotes=1)
-
+    env.configure(remotes='vnc://localhost:5900+15900')
+    # env.configure(remotes=1)
     observation_n = env.reset()
 
-    while(True):
+    e = 0
+    while(e <= episodes):
         if(observation_n[0] != None):
-            observation = np.expand_dims(np.expand_dims(observation_n[0]['vision'], axis=3), axis=0)
-            action_n = select_action(observation)
+            e+=1
+            print('Entered')
+            for time_t in range(500):
+                observation = np.expand_dims(observation_n[0]['vision'], axis=3)
+                action = select_action(np.expand_dims(observation, axis=0))
 
-            next_state, reward_n, done_n, info = env.step(action_n)
+                next_state, reward_n, done_n, info = env.step([ACTIONS[action]])
+                env.render()
 
-            if(done_n[0]):
-                memory.ins(observation, action_n, [None], reward_n)
+                if(done_n[0]):
+                    memory.ins(observation, action, [None], reward_n)
+                    print("episode: {}/{}, score: {}"
+                        .format(e, episodes, time_t))
+                    observation_n = env.reset()
+                    break
+                else:
+                    memory.ins(observation, action, next_state, reward_n)
             else:
-                memory.ins(observation, action_n, next_state, reward_n)
-
-            optimize_model()
+                print("Game Restart")
+                observation_n = env.reset()
+                optimize_model()
         else:
             action_n = [random.choice(ACTIONS)]
-            next_state, reward_n, done_n, info = env.step(action_n)
+        next_state, reward_n, done_n, info = env.step(action_n)
 
         observation_n = next_state
         env.render()

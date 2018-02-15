@@ -96,7 +96,7 @@ def optimize_model():
     y_train = np.array(y_train)
     print(x_train)
     print(y_train)
-    Q.fit(x=x_train, y=y_train, batch_size=32, epochs=5, verbose=1)
+    Q.fit(x=x_train, y=y_train, batch_size=2, epochs=2, verbose=1)
 
 episodes = 5
 def main():
